@@ -17,6 +17,7 @@ from src import analysis_service
 from src import settings as runtime_settings
 from src import backtest as backtest_engine
 from src import paper_trading
+from src import autotrader
 from pydantic import BaseModel
 from typing import Optional, Dict
 
@@ -192,6 +193,25 @@ async def paper_trades(status: Optional[str] = Query(None)):
 @api_router.get("/paper/stats")
 async def paper_stats():
     return paper_trading.stats()
+
+
+# --- Auto-trader ---------------------------------------------------------
+class AutoTradeReq(BaseModel):
+    enabled: Optional[bool] = None
+    timeframe: Optional[str] = None
+    notional_usd: Optional[float] = None
+    sl_atr_mult: Optional[float] = None
+    tp_atr_mult: Optional[float] = None
+
+
+@api_router.get("/autotrade")
+async def autotrade_status():
+    return autotrader.status()
+
+
+@api_router.put("/autotrade")
+async def autotrade_update(req: AutoTradeReq):
+    return autotrader.update(req.model_dump(exclude_none=True))
 
 
 app.include_router(api_router)

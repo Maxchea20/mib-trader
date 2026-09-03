@@ -13,7 +13,7 @@ import { MultiTimeframeRegime } from "@/components/trading/MultiTimeframeRegime"
 import { KeyLevelsPanel } from "@/components/trading/KeyLevelsPanel";
 import { SettingsPanel } from "@/components/trading/SettingsPanel";
 import { BacktestModal } from "@/components/trading/BacktestModal";
-import { PaperTradingModal } from "@/components/trading/PaperTradingModal";
+import { PaperTradingPanel } from "@/components/trading/PaperTradingPanel";
 
 function App() {
   const [timeframe, setTimeframe] = useState("15m");
@@ -26,7 +26,6 @@ function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [backtestOpen, setBacktestOpen] = useState(false);
-  const [paperOpen, setPaperOpen] = useState(false);
   const tfRef = useRef(timeframe);
   tfRef.current = timeframe;
   const [livePrice, setLivePrice] = useState(null);
@@ -147,7 +146,6 @@ function App() {
         syncStatus={syncStatus}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenBacktest={() => setBacktestOpen(true)}
-        onOpenPaper={() => setPaperOpen(true)}
       />
 
       <main className="pt-16 px-3 pb-6 max-w-[1800px] mx-auto">
@@ -203,6 +201,9 @@ function App() {
           <AgentMatrix agents={analysis?.agents || []} hoveredType={hoveredType} />
         </div>
 
+        {/* PAPER TRADING — always visible below the agents */}
+        <PaperTradingPanel brain={analysis?.brain} livePrice={livePrice} timeframe={timeframe} />
+
         <div className="mt-4 font-mono-t text-[10px] text-slate-600 leading-relaxed panel p-3">
           <span className="text-slate-400">V1 assumptions:</span>{" "}
           {(analysis?.brain?.assumptions || []).join("  ·  ")}
@@ -217,13 +218,6 @@ function App() {
       <BacktestModal
         open={backtestOpen}
         onClose={() => setBacktestOpen(false)}
-        timeframe={timeframe}
-      />
-      <PaperTradingModal
-        open={paperOpen}
-        onClose={() => setPaperOpen(false)}
-        brain={analysis?.brain}
-        livePrice={livePrice}
         timeframe={timeframe}
       />
     </div>

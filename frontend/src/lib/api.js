@@ -25,6 +25,8 @@ export const closePaperTrade = async (id) => (await client.post(`/paper/close/${
 export const getPaperTrades = async (status) =>
   (await client.get("/paper/trades", { params: status ? { status } : {} })).data;
 export const getPaperStats = async () => (await client.get("/paper/stats")).data;
+export const getAutotrade = async () => (await client.get("/autotrade")).data;
+export const updateAutotrade = async (payload) => (await client.put("/autotrade", payload)).data;
 
 export const AGENT_META = {
   market_structure: { name: "Market Structure", focus: "HH / HL / LH / LL · BOS · CHoCH", num: "01" },

@@ -1,0 +1,35 @@
+{
+  "summary": "Tested hands-free auto-trading + always-visible paper panel (backend pytest + frontend Playwright). Backend 7/7 pass: GET /api/autotrade shape (config+state+open_auto_trade), toggle off->on opens an AUTO paper trade when Brain=LONG/SHORT, no-duplicate-on-retoggle rule, manual trade has source=MANUAL and coexists, trades persist across GETs with source column, /api/paper/stats shape. Frontend validated on REACT_APP_BACKEND_URL: paper-panel renders below the 10 TA agents (always visible), no header 'Paper' button, autotrade-toggle reads ON by default and flips ON<->OFF via PUT /api/autotrade, autotrade-status line shows 'Engine: running · TF 15m · size $1,000 · last: HOLD LONG (…)', an AUTO trade appears in Open Positions tab tagged AUTO with entry/SL/TP/unrealized PnL, manual New Trade flow creates a MANUAL trade that appears in Open Positions, History tab lists closed trades, stats bar and total realized PnL populate, BTC WS ticker updates ($79,070.1), timeframe switching (15m/1h) works, 10 agent cards render, no runtime error overlay.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Brain hero", "issues": ["data-testid='brain-hero' not present on the Brain hero container (visual content renders correctly, but the testid is missing making automated regression harder). Every other referenced testid was found."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_autotrade.py",
+    "/app/test_reports/pytest/autotrade.xml"
+  ],
+  "action_items": [
+    "Optional: add data-testid='brain-hero' to the Brain decision hero container (task references it implicitly under 'Brain hero + 10 agent cards render').",
+    "Consider mapping paper endpoint failure paths to proper HTTP status codes (still applies from prior iteration: no_price_available / trade_not_found return 200 with error dicts)."
+  ],
+  "critical_code_review_comments": [
+    "autotrader.update() correctly force-evaluates on off->on transition; one-AUTO-position rule enforced via _open_auto() scan of OPEN trades.",
+    "paper_trading.open_trade() uses explicit-column INSERT including source, and ALTER TABLE migration is guarded — safe for existing DBs.",
+    "manager._autotrade_loop() polls every 5s and evaluate() is new-candle-gated (last_candle_ts) so it won't spam trades on WS ticks — good.",
+    "SL/TP derived from 14-period ATR with fallback price*0.005 when ATR<=0 — reasonable guard.",
+    "Single shared sqlite connection with check_same_thread=False + RLock: acceptable now, but recommend per-thread or aiosqlite as concurrency grows.",
+    "server.py /api/paper/close/{id} and /api/paper/open still return dicts with 'error' key at 200; prefer HTTPException(400/404) for API consistency."
+  ],
+  "updated_files": ["/app/backend/tests/test_autotrade.py"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% (all critical flows, 1 minor missing testid)"},
+  "test_credentials": "N/A (no auth)",
+  "seed_data_creation": "Test opened 1 MANUAL paper trade ($100 LONG, 1% SL / 2% TP) that was left in Open (test does not force-close it). Auto-trade engine also opened AUTO trades during off->on toggling. History table shows accumulated closed trades from prior iterations; safe to purge for a clean demo.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "New tests: /app/backend/tests/test_autotrade.py (7 tests) covering GET/PUT /api/autotrade, force-eval on toggle, no-dup rule, source tagging, persistence, stats shape. Frontend testids validated: paper-panel, autotrade-toggle, autotrade-status, paper-stats, paper-total-pnl, paper-tab-open/history, paper-table-open/history, paper-new-toggle, paper-new-form, paper-side-long/short, paper-notional, paper-sl-pct, paper-tp-pct, paper-submit, btc-price-ticker, tf-1m..tf-1d, agent-card-*. Missing: data-testid='brain-hero'. Frontend hosted at https://mib-trader-live.preview.emergentagent.com (from frontend/.env). WS endpoint wss://.../api/ws/live connects but a first-attempt warning appears in console (auto-reconnects, ticker updates fine).",
+  "rca of the issue": "N/A — no bugs found."
+}

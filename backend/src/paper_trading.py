@@ -54,10 +54,16 @@ def init_db() -> None:
                 brain_state   TEXT,
                 consensus     REAL,
                 confidence    REAL,
-                note          TEXT
+                note          TEXT,
+                source        TEXT DEFAULT 'MANUAL'
             );
             """
         )
+        # migration for pre-existing DBs
+        try:
+            conn.execute("ALTER TABLE paper_trades ADD COLUMN source TEXT DEFAULT 'MANUAL'")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
 
@@ -78,7 +84,7 @@ def _pnl(side: str, entry: float, exit_price: float, qty: float):
 def open_trade(symbol: str, side: str, entry_price: float, sl_price: Optional[float],
                tp_price: Optional[float], notional_usd: float, timeframe: str = "",
                brain_state: str = "", consensus: float = 0.0, confidence: float = 0.0,
-               note: str = "") -> Dict:
+               note: str = "", source: str = "MANUAL") -> Dict:
     side = LONG if str(side).upper() == LONG else SHORT
     entry_price = float(entry_price)
     notional_usd = max(1.0, float(notional_usd))
@@ -89,14 +95,16 @@ def open_trade(symbol: str, side: str, entry_price: float, sl_price: Optional[fl
     qty = notional_usd / entry_price
     tid = str(uuid.uuid4())
     now = int(time.time())
-    row = (tid, symbol, timeframe, side, "OPEN", entry_price, float(sl_price),
-           float(tp_price), qty, notional_usd, now, None, None, None, None, None,
-           brain_state, float(consensus), float(confidence), note)
     with _lock:
         conn = _connect()
         conn.execute(
-            """INSERT INTO paper_trades VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            row,
+            """INSERT INTO paper_trades
+               (id, symbol, timeframe, side, status, entry_price, sl_price, tp_price,
+                qty, notional_usd, opened_at, brain_state, consensus, confidence, note, source)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (tid, symbol, timeframe, side, "OPEN", entry_price, float(sl_price),
+             float(tp_price), qty, notional_usd, now, brain_state, float(consensus),
+             float(confidence), note, source),
         )
         conn.commit()
     return get_trade(tid)

@@ -72,6 +72,19 @@ async def initial_load():
     asyncio.create_task(_broadcast_loop())
     asyncio.create_task(_poll_loop())
     asyncio.create_task(_paper_monitor_loop())
+    asyncio.create_task(_autotrade_loop())
+
+
+async def _autotrade_loop():
+    """Hands-free: evaluate the Brain on each new candle and manage AUTO trades."""
+    from .. import autotrader
+    await asyncio.sleep(9)  # let startup sync populate candles
+    while True:
+        try:
+            autotrader.evaluate(STATE.get("last_price"))
+        except Exception:
+            pass
+        await asyncio.sleep(5)
 
 
 async def _paper_monitor_loop():

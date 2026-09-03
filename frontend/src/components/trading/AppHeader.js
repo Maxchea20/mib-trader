@@ -1,9 +1,9 @@
 import React from "react";
-import { Activity, Database, Wifi, WifiOff, SlidersHorizontal, LineChart, Wallet } from "lucide-react";
+import { Activity, Database, Wifi, WifiOff, SlidersHorizontal, LineChart } from "lucide-react";
 import { TIMEFRAMES } from "../../lib/api";
 import { fmt } from "../../lib/style";
 
-export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, onOpenSettings, onOpenBacktest, onOpenPaper }) => {
+export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, onOpenSettings, onOpenBacktest }) => {
   const price = live?.last_price;
   const t = ticker || {};
   const changeRate = (t.change_rate || 0) * 100;
@@ -81,15 +81,6 @@ export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, on
           ))}
         </div>
 
-        <button
-          data-testid="open-paper"
-          onClick={onOpenPaper}
-          title="Paper Trading"
-          className="flex items-center gap-1.5 font-mono-t text-[11px] text-slate-300 px-2.5 py-1.5 rounded-sm bg-[#0d121b] border border-[#1d2635] hover:border-cyan-500/60 transition-colors"
-        >
-          <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="hidden lg:inline">Paper</span>
-        </button>
         <button
           data-testid="open-backtest"
           onClick={onOpenBacktest}
