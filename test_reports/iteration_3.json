@@ -1,0 +1,24 @@
+{
+  "summary": "Tested paper-trading feature end-to-end (backend pytest + frontend Playwright). 8/8 backend tests pass (GET/POST /api/paper/* including auto-close TP/SL monitor, PnL sign correctness for LONG & SHORT, mark-to-market, persistence, stats). Frontend paper modal opens via header 'Paper' button, New Trade form accepts side/notional/SL%/TP%, submit creates a trade and switches to Open tab, Close button moves it to History, stats bar (paper-total-pnl) updates. Real-time BTC ticker updates from MEXC WS, Brain hero + 10 agents render, timeframe switching works, no Uncaught runtime error overlay.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_paper_trading.py",
+    "/app/test_reports/pytest/paper_trading.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "paper_trading._pnl sign logic is correct for both LONG/SHORT; verified numerically via test_unrealized_pnl_signs.",
+    "Initial auto-close test with LONG-only + TP 0.02% above entry can be flaky if price drifts down; replaced with dual LONG+SHORT to reliably capture either direction. Consider documenting expected worst-case latency (1s poll + WS tick cadence).",
+    "server.py returns error dicts (no HTTP status change) for no_price_available / trade_not_found; prefer HTTPException(400/404) for API-consistency.",
+    "close_trade silently no-ops when trade already CLOSED (returns existing row without indicator); consider returning a distinct field or 409.",
+    "SQLite _conn is a single shared connection with check_same_thread=False and an RLock — fine for current scale; if concurrency grows, switch to a per-thread connection or an async driver."
+  ],
+  "updated_files": ["/app/backend/tests/test_paper_trading.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (all critical flows)"},
+  "seed_data_creation": "During testing several TEST paper trades were opened & closed (cleaned up manually in tests; a few closed rows persist in history intentionally to validate persistence + stats). History table showed 10 closed rows after run; delete if a clean slate is needed for demo.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_paper_trading.py covers: shape, default SL/TP, explicit SL/TP, LONG+SHORT unrealized PnL signs, manual close, auto-close TP (dual side to avoid flakiness with ~30s budget), stats consistency, persistence across GETs. Frontend testids: open-paper, paper-modal, paper-tab-new/open/history, paper-side-long/short, paper-notional, paper-sl-pct, paper-tp-pct, paper-submit, paper-table-open/history, paper-close-<id>, paper-total-pnl, paper-stats, btc-price-ticker.",
+  "rca of the issue": "N/A — no bugs found."
+}

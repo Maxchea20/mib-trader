@@ -13,6 +13,7 @@ import { MultiTimeframeRegime } from "@/components/trading/MultiTimeframeRegime"
 import { KeyLevelsPanel } from "@/components/trading/KeyLevelsPanel";
 import { SettingsPanel } from "@/components/trading/SettingsPanel";
 import { BacktestModal } from "@/components/trading/BacktestModal";
+import { PaperTradingModal } from "@/components/trading/PaperTradingModal";
 
 function App() {
   const [timeframe, setTimeframe] = useState("15m");
@@ -25,6 +26,7 @@ function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [backtestOpen, setBacktestOpen] = useState(false);
+  const [paperOpen, setPaperOpen] = useState(false);
   const tfRef = useRef(timeframe);
   tfRef.current = timeframe;
   const [livePrice, setLivePrice] = useState(null);
@@ -145,6 +147,7 @@ function App() {
         syncStatus={syncStatus}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenBacktest={() => setBacktestOpen(true)}
+        onOpenPaper={() => setPaperOpen(true)}
       />
 
       <main className="pt-16 px-3 pb-6 max-w-[1800px] mx-auto">
@@ -214,6 +217,13 @@ function App() {
       <BacktestModal
         open={backtestOpen}
         onClose={() => setBacktestOpen(false)}
+        timeframe={timeframe}
+      />
+      <PaperTradingModal
+        open={paperOpen}
+        onClose={() => setPaperOpen(false)}
+        brain={analysis?.brain}
+        livePrice={livePrice}
         timeframe={timeframe}
       />
     </div>

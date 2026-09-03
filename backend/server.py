@@ -16,6 +16,7 @@ from src.market_data import gap_sync, manager
 from src import analysis_service
 from src import settings as runtime_settings
 from src import backtest as backtest_engine
+from src import paper_trading
 from pydantic import BaseModel
 from typing import Optional, Dict
 
@@ -135,6 +136,62 @@ async def backtest(timeframe: str = Query("15m"), lookback: int = Query(150),
     import asyncio
     return await asyncio.to_thread(backtest_engine.run_backtest, timeframe,
                                    lookback, forward, step)
+
+
+# --- Paper trading -------------------------------------------------------
+class OpenTradeReq(BaseModel):
+    side: str
+    entry_price: Optional[float] = None
+    sl_price: Optional[float] = None
+    tp_price: Optional[float] = None
+    notional_usd: float = 1000.0
+    timeframe: str = ""
+    brain_state: str = ""
+    consensus: float = 0.0
+    confidence: float = 0.0
+    note: str = ""
+
+
+class CloseTradeReq(BaseModel):
+    exit_price: Optional[float] = None
+
+
+@api_router.post("/paper/open")
+async def paper_open(req: OpenTradeReq):
+    live = manager.live_status()
+    entry = req.entry_price if req.entry_price else live.get("last_price")
+    if not entry:
+        return {"error": "no_price_available"}
+    return paper_trading.open_trade(
+        symbol=SYMBOL, side=req.side, entry_price=entry, sl_price=req.sl_price,
+        tp_price=req.tp_price, notional_usd=req.notional_usd, timeframe=req.timeframe,
+        brain_state=req.brain_state, consensus=req.consensus, confidence=req.confidence,
+        note=req.note,
+    )
+
+
+@api_router.post("/paper/close/{trade_id}")
+async def paper_close(trade_id: str, req: CloseTradeReq):
+    live = manager.live_status()
+    exit_price = req.exit_price if req.exit_price else live.get("last_price")
+    if not exit_price:
+        return {"error": "no_price_available"}
+    t = paper_trading.close_trade(trade_id, exit_price, "MANUAL")
+    if not t:
+        return {"error": "trade_not_found"}
+    return t
+
+
+@api_router.get("/paper/trades")
+async def paper_trades(status: Optional[str] = Query(None)):
+    live = manager.live_status()
+    return {"trades": paper_trading.list_trades(status, live.get("last_price")),
+            "live_price": live.get("last_price")}
+
+
+@api_router.get("/paper/stats")
+async def paper_stats():
+    return paper_trading.stats()
 
 
 app.include_router(api_router)

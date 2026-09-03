@@ -20,6 +20,12 @@ export const resetSettings = async () => (await client.post("/settings/reset")).
 export const runBacktest = async ({ timeframe, lookback = 150, forward = 8, step = 3 }) =>
   (await client.get("/backtest", { params: { timeframe, lookback, forward, step } })).data;
 
+export const openPaperTrade = async (payload) => (await client.post("/paper/open", payload)).data;
+export const closePaperTrade = async (id) => (await client.post(`/paper/close/${id}`, {})).data;
+export const getPaperTrades = async (status) =>
+  (await client.get("/paper/trades", { params: status ? { status } : {} })).data;
+export const getPaperStats = async () => (await client.get("/paper/stats")).data;
+
 export const AGENT_META = {
   market_structure: { name: "Market Structure", focus: "HH / HL / LH / LL · BOS · CHoCH", num: "01" },
   breakout: { name: "Breakout / Breakdown", focus: "Range · Volume · ATR · Follow-through", num: "02" },

@@ -65,10 +65,24 @@ def _seed_synthetic(symbol: str, timeframe: str, base_price: float, count: int =
 async def initial_load():
     """Non-blocking: kick everything off. Returns immediately after DB init."""
     db.init_db()
+    from .. import paper_trading
+    paper_trading.init_db()
     asyncio.create_task(_startup_sync())
     asyncio.create_task(_mexc_ws_loop())
     asyncio.create_task(_broadcast_loop())
     asyncio.create_task(_poll_loop())
+    asyncio.create_task(_paper_monitor_loop())
+
+
+async def _paper_monitor_loop():
+    """Auto-close paper trades when the live price hits SL/TP (persists history)."""
+    from .. import paper_trading
+    while True:
+        await asyncio.sleep(1)
+        try:
+            paper_trading.check_open_trades(STATE.get("last_price"))
+        except Exception:
+            pass
 
 
 # --- Frontend WebSocket fan-out -----------------------------------------
