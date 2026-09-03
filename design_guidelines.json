@@ -1,0 +1,196 @@
+{
+  "project_name": "MIB-Trader (Multi-Agent Quantitative Cryptocurrency Trading Terminal)",
+  "app_archetype": "THE_PERFORMANCE_PRO_TACTICAL_TERMINAL",
+  "theme_strategy": {
+    "default_mode": "dark",
+    "rationale": "High-density quantitative algorithmic trading workstations require low eyestrain dark interfaces with maximum contrast for green/red/amber signal indicators, microsecond timestamps, and candlestick rendering.",
+    "background_base": "#080B10",
+    "surface_layers": {
+      "surface_void": "#05070A",
+      "surface_card": "#0D1117",
+      "surface_elevated": "#151B24",
+      "surface_highlight": "#1E2736",
+      "surface_border": "#212B3B",
+      "surface_border_subtle": "#161F2E"
+    }
+  },
+  "typography": {
+    "headline_font": "Barlow Condensed, Outfit, sans-serif",
+    "body_font": "DM Sans, system-ui, sans-serif",
+    "numeric_mono_font": "JetBrains Mono, Roboto Mono, monospace",
+    "font_pair_rationale": "Barlow Condensed delivers intense, heavyweight athletic & tactical Bloomberg header presence. JetBrains Mono ensures zero layout shifts on high-frequency streaming prices, order sizes, confidence percentages, and consensus scores. DM Sans provides crisp legibility for multi-agent analytical evidence text.",
+    "scale": {
+      "hero_decision": "text-4xl sm:text-5xl font-black tracking-tight uppercase",
+      "section_title": "text-xl sm:text-2xl font-bold tracking-tight",
+      "widget_heading": "text-xs font-semibold uppercase tracking-[0.15em] text-slate-400",
+      "metric_large": "text-2xl sm:text-3xl font-mono font-bold tracking-tight",
+      "metric_body": "text-sm font-mono font-medium",
+      "body_regular": "text-xs sm:text-sm font-sans text-slate-300 leading-relaxed",
+      "micro_label": "text-[10px] font-mono uppercase tracking-wider text-slate-500"
+    }
+  },
+  "colors": {
+    "palette": {
+      "terminal_bg": "#080B10",
+      "panel_bg": "#0D121B",
+      "panel_border": "#1D2635",
+      "panel_border_active": "#3B82F6",
+      "accent_primary_electric": "#00E599",
+      "accent_cyan_glow": "#00C8FF",
+      "accent_orange_alert": "#FF7A00",
+      "accent_amber_warning": "#FFB800",
+      "accent_purple_regime": "#9D4EDD"
+    },
+    "decision_states": {
+      "LONG": {
+        "text": "#00F59B",
+        "bg": "rgba(0, 245, 155, 0.12)",
+        "border": "#00F59B",
+        "glow": "0 0 20px rgba(0, 245, 155, 0.35)",
+        "badge_class": "bg-emerald-950/70 border-emerald-500/50 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+      },
+      "SHORT": {
+        "text": "#FF3B56",
+        "bg": "rgba(255, 59, 86, 0.12)",
+        "border": "#FF3B56",
+        "glow": "0 0 20px rgba(255, 59, 86, 0.35)",
+        "badge_class": "bg-rose-950/70 border-rose-500/50 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.3)]"
+      },
+      "WAIT": {
+        "text": "#FFB800",
+        "bg": "rgba(255, 184, 0, 0.12)",
+        "border": "#FFB800",
+        "glow": "0 0 20px rgba(255, 184, 0, 0.35)",
+        "badge_class": "bg-amber-950/70 border-amber-500/50 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+      },
+      "AVOID": {
+        "text": "#94A3B8",
+        "bg": "rgba(148, 163, 184, 0.12)",
+        "border": "#64748B",
+        "glow": "none",
+        "badge_class": "bg-slate-900/80 border-slate-600 text-slate-300"
+      }
+    },
+    "market_levels": {
+      "support": "rgba(16, 185, 129, 0.85)",
+      "resistance": "rgba(244, 63, 94, 0.85)",
+      "fibonacci": "rgba(168, 85, 247, 0.8)",
+      "fvg_bullish": "rgba(16, 185, 129, 0.18)",
+      "fvg_bearish": "rgba(244, 63, 94, 0.18)",
+      "breakout_level": "rgba(56, 189, 248, 0.9)"
+    }
+  },
+  "layout_architecture": {
+    "grid_structure": "Desktop Tactical Split 12-Column Grid with fixed Header & Status Ticker",
+    "header_nav": {
+      "fixed_top": true,
+      "height": "h-14",
+      "style": "bg-[#090D14]/90 backdrop-blur-xl border-b border-[#1E2638] z-50 flex items-center justify-between px-4",
+      "elements": [
+        "MIB-Trader Brand Badge (Cyber tactical logo + LIVE badge)",
+        "BTC/USDT Realtime Ticker (Price, 24h Change, 24h High/Low, Volume)",
+        "MEXC SQLite Sync Indicator (Synced/Lag ms/Candles in DB)",
+        "WebSocket / Poll Heartbeat status (Pulse animation)",
+        "Timeframe Selector Quick Switcher (1m, 5m, 15m, 30m, 1h, 4h, 1d)"
+      ]
+    },
+    "main_workspace_3_layer_hierarchy": {
+      "layer_1_market_data": {
+        "title": "LAYER 1: RAW & STRUCTURED MARKET DATA",
+        "span": "col-span-12 xl:col-span-8 flex flex-col gap-3",
+        "components": [
+          "Interactive Candlestick Chart (Lightweight-charts / custom canvas high-performance candle renderer with volume histogram, overlay indicators toggle, crosshair tooltip, timeframe selector)",
+          "HTF Regime Matrix (4h Trend, 1d Structure, Volatility state, Funding/Open-Interest context)",
+          "Key Trading Levels Strip & FVG/Fibonacci Inspector (Support 1/2/3, Resistance 1/2/3, 0.618 Golden Pocket, Active FVG Imbalance Zones)"
+        ]
+      },
+      "layer_2_brain_consensus": {
+        "title": "LAYER 2: BRAIN CONSENSUS ENGINE (TOP COMMAND)",
+        "span": "col-span-12 xl:col-span-4 flex flex-col gap-3",
+        "components": [
+          "Brain Master Decision Hero (LONG / SHORT / WAIT / AVOID high-impact banner)",
+          "Consensus Score Gauge (-100 Extreme Bearish to +100 Extreme Bullish with zero-center bar)",
+          "Confidence Gauge (% score with breakdown of voting weights)",
+          "Traceable Reasoning Feed ('Why did the Brain decide this?' bulleted causal chain with agent contributions & conflict vetoes)"
+        ]
+      },
+      "layer_3_individual_agents": {
+        "title": "LAYER 3: 10 INDEPENDENT TA AGENTS MATRIX",
+        "span": "col-span-12 mt-2",
+        "grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3",
+        "agents": [
+          {"id": "market_structure", "name": "Market Structure", "focus": "BOS / CHoCH / Swing High-Lows"},
+          {"id": "breakout_breakdown", "name": "Breakout / Breakdown", "focus": "Range expansion & Volatility squeeze"},
+          {"id": "fibonacci", "name": "Fibonacci Retracement", "focus": "Golden pocket 0.618-0.65 & Extensions"},
+          {"id": "elliott_wave", "name": "Elliott Wave", "focus": "Motive 1-5 & Corrective A-B-C Wave Count"},
+          {"id": "volume_profile", "name": "Volume & Flow", "focus": "CVD, OBV, Volume spikes & Delta"},
+          {"id": "momentum", "name": "Momentum & Oscillators", "focus": "RSI divergences, Stochastic, MACD histogram"},
+          {"id": "support_resistance", "name": "Support & Resistance", "focus": "Key pivots, Dynamic EMAs, Liquidity pools"},
+          {"id": "trend_filter", "name": "Trend Filter", "focus": "Supertrend, ADX directional strength, EMA ribbons"},
+          {"id": "pattern_recognition", "name": "Pattern Analysis", "focus": "Flags, Triangles, Head & Shoulders, Wedges"},
+          {"id": "fair_value_gap", "name": "Fair Value Gap (FVG)", "focus": "Bullish/Bearish imbalances & Mitigations"}
+        ]
+      }
+    }
+  },
+  "visual_enhancers": {
+    "grid_borders": "1px solid #1A2333 with subtle 0.5px inner glow",
+    "active_signal_pulse": "Continuous subtle 2s ease-in-out pulse on dominant brain direction",
+    "tactical_scanlines": "Subtle terminal scanline overlay on background canvas for pro cyber-quant aesthetic",
+    "micro_interactions": [
+      "Hovering an agent card highlights corresponding levels on the chart (e.g. FVG agent highlights FVG zones)",
+      "Timeframe switch triggers smooth data refresh animation without chart flickering",
+      "Consensus score bar animates smoothly using Framer Motion with easeOut curve"
+    ]
+  },
+  "component_structure": {
+    "AppHeader": "/app/frontend/src/components/trading/AppHeader.js",
+    "CandleChart": "/app/frontend/src/components/trading/CandleChart.js",
+    "BrainHeroPanel": "/app/frontend/src/components/trading/BrainHeroPanel.js",
+    "AgentCard": "/app/frontend/src/components/trading/AgentCard.js",
+    "AgentMatrix": "/app/frontend/src/components/trading/AgentMatrix.js",
+    "MultiTimeframeRegime": "/app/frontend/src/components/trading/MultiTimeframeRegime.js",
+    "KeyLevelsPanel": "/app/frontend/src/components/trading/KeyLevelsPanel.js",
+    "ExplainabilityPanel": "/app/frontend/src/components/trading/ExplainabilityPanel.js",
+    "SyncStatusBadge": "/app/frontend/src/components/trading/SyncStatusBadge.js",
+    "AgentDetailModal": "/app/frontend/src/components/trading/AgentDetailModal.js"
+  },
+  "testing_attributes": {
+    "mandatory_pattern": "data-testid kebab-case for all interactive and vital display components",
+    "test_ids": [
+      "app-header",
+      "btc-price-ticker",
+      "timeframe-selector",
+      "sync-status-indicator",
+      "trading-chart-container",
+      "brain-decision-hero",
+      "brain-decision-badge",
+      "brain-consensus-score",
+      "brain-confidence-gauge",
+      "brain-reasons-list",
+      "htf-regime-panel",
+      "key-levels-panel",
+      "fvg-zones-list",
+      "fibonacci-levels-list",
+      "agent-card-market_structure",
+      "agent-card-breakout_breakdown",
+      "agent-card-fibonacci",
+      "agent-card-elliott_wave",
+      "agent-card-volume_profile",
+      "agent-card-momentum",
+      "agent-card-support_resistance",
+      "agent-card-trend_filter",
+      "agent-card-pattern_recognition",
+      "agent-card-fair_value_gap",
+      "explainability-why-button",
+      "refresh-analysis-button"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build the UI in React (.js / .jsx) with high data density, no generic AI-slop rounded cards. Use tactical Bloomberg/TradingView dark style (#080B10 base, #0D121B panels).",
+    "Strictly separate MARKET DATA (Prices, Chart, Sync) from 10 TA AGENTS from BRAIN CONSENSUS (Decision, Score, Reasons).",
+    "Ensure all 10 technical analysis agents display direction (LONG/SHORT/NEUTRAL), confidence percentage (0-100%), strength visual bar, and specific evidence list.",
+    "Provide interactive features: timeframe selection, filter agents by vote direction, click agent to inspect deep breakdown & formula evidence, level hover sync.",
+    "Support mock/persistent API connectivity to the FastAPI backend serving SQLite candles and agent consensus computation."
+  ]
+}

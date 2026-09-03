@@ -1,0 +1,105 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --terminal-bg: #080b10;
+  --panel-bg: #0d121b;
+  --panel-elevated: #151b24;
+  --panel-border: #1d2635;
+  --panel-border-subtle: #161f2e;
+  --long: #00f59b;
+  --short: #ff3b56;
+  --wait: #ffb800;
+  --avoid: #94a3b8;
+  --cyan: #00c8ff;
+  --purple: #9d4edd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--terminal-bg);
+  color: #e2e8f0;
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-head {
+  font-family: "Barlow Condensed", sans-serif;
+}
+.font-mono-t {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* tactical scanline overlay */
+.scanlines::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.014) 0px,
+    rgba(255, 255, 255, 0.014) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.panel {
+  background-color: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+}
+
+.panel-hover {
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.panel-hover:hover {
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.widget-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #5b6b82;
+}
+
+/* pulse for live/decision */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.pulse-dot {
+  animation: pulseGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 0.4s ease-out both;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0e15; }
+::-webkit-scrollbar-thumb { background: #26334a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #35486a; }
+
+.bar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
