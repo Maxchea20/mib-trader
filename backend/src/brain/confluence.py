@@ -5,11 +5,12 @@ must not become fully independent votes. We cluster their key levels near the
 current price and award a bonus with diminishing returns.
 """
 from typing import List, Dict
-from ..config import CONFLUENCE
+from .. import settings
 from ..indicators import cluster_levels
 
 
 def find_confluence_zones(agents: List, price: float) -> List[Dict]:
+    CONFLUENCE = settings.confluence()
     tol = CONFLUENCE["zone_tolerance_pct"]
     contributions = []  # (price, agent, direction, label)
     for res in agents:

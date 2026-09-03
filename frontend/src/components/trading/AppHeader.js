@@ -1,9 +1,9 @@
 import React from "react";
-import { Activity, Database, Wifi, WifiOff } from "lucide-react";
+import { Activity, Database, Wifi, WifiOff, SlidersHorizontal, LineChart } from "lucide-react";
 import { TIMEFRAMES } from "../../lib/api";
 import { fmt } from "../../lib/style";
 
-export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus }) => {
+export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, onOpenSettings, onOpenBacktest }) => {
   const price = live?.last_price;
   const t = ticker || {};
   const changeRate = (t.change_rate || 0) * 100;
@@ -62,7 +62,7 @@ export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus }) 
           {connected ? <Wifi className="w-3.5 h-3.5 text-emerald-400" /> : <WifiOff className="w-3.5 h-3.5 text-rose-400" />}
           <span className={`pulse-dot w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400" : "bg-rose-500"}`} />
           <span className="font-mono-t text-[11px] text-slate-300">
-            {fallback ? "SIM" : connected ? "MEXC LIVE" : "OFFLINE"}
+            {fallback ? "SIM" : connected ? (live?.ws_connected ? "MEXC · WS" : "MEXC LIVE") : "OFFLINE"}
           </span>
         </div>
 
@@ -80,6 +80,24 @@ export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus }) 
             </button>
           ))}
         </div>
+
+        <button
+          data-testid="open-backtest"
+          onClick={onOpenBacktest}
+          title="Backtest"
+          className="flex items-center gap-1.5 font-mono-t text-[11px] text-slate-300 px-2.5 py-1.5 rounded-sm bg-[#0d121b] border border-[#1d2635] hover:border-cyan-500/60 transition-colors"
+        >
+          <LineChart className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden lg:inline">Backtest</span>
+        </button>
+        <button
+          data-testid="open-settings"
+          onClick={onOpenSettings}
+          title="Config"
+          className="flex items-center justify-center p-1.5 rounded-sm bg-[#0d121b] border border-[#1d2635] hover:border-cyan-500/60 transition-colors"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-slate-300" />
+        </button>
       </div>
     </header>
   );

@@ -11,6 +11,8 @@ import { ExplainabilityPanel } from "@/components/trading/ExplainabilityPanel";
 import { AgentMatrix } from "@/components/trading/AgentMatrix";
 import { MultiTimeframeRegime } from "@/components/trading/MultiTimeframeRegime";
 import { KeyLevelsPanel } from "@/components/trading/KeyLevelsPanel";
+import { SettingsPanel } from "@/components/trading/SettingsPanel";
+import { BacktestModal } from "@/components/trading/BacktestModal";
 
 function App() {
   const [timeframe, setTimeframe] = useState("15m");
@@ -21,8 +23,12 @@ function App() {
   const [syncStatus, setSyncStatus] = useState(null);
   const [hoveredType, setHoveredType] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [backtestOpen, setBacktestOpen] = useState(false);
   const tfRef = useRef(timeframe);
   tfRef.current = timeframe;
+  const [livePrice, setLivePrice] = useState(null);
+  const wsRef = useRef(null);
 
   const loadTicker = useCallback(async () => {
     try {
@@ -67,12 +73,55 @@ function App() {
   useEffect(() => {
     loadTicker();
     loadSync();
-    const t1 = setInterval(loadTicker, 3000);
+    const t1 = setInterval(loadTicker, 20000);
     const t2 = setInterval(() => loadCandles(tfRef.current), 8000);
     const t3 = setInterval(() => loadAnalysis(tfRef.current), 12000);
     const t4 = setInterval(loadSync, 15000);
     return () => { [t1, t2, t3, t4].forEach(clearInterval); };
   }, [loadTicker, loadCandles, loadAnalysis, loadSync]);
+
+  // live WebSocket price feed
+  useEffect(() => {
+    let closed = false;
+    let reconnectTimer = null;
+    const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/^http/, "ws");
+    const url = `${base}/api/ws/live`;
+
+    const connect = () => {
+      if (closed) return;
+      let ws;
+      try { ws = new WebSocket(url); } catch (e) { return; }
+      wsRef.current = ws;
+      ws.onmessage = (evt) => {
+        try {
+          const d = JSON.parse(evt.data);
+          if (d.type === "tick") {
+            if (d.price != null) setLivePrice(d.price);
+            setLive((prev) => ({
+              ...(prev || {}),
+              connected: true,
+              ws_connected: d.ws_connected,
+              source: d.source,
+              last_price: d.price,
+              ticker: d.ticker || prev?.ticker,
+            }));
+            if (d.ticker && Object.keys(d.ticker).length > 2) setTicker(d.ticker);
+          }
+        } catch (e) {}
+      };
+      ws.onclose = () => {
+        if (closed) return;
+        reconnectTimer = setTimeout(connect, 2500);
+      };
+      ws.onerror = () => { try { ws.close(); } catch (e) {} };
+    };
+    connect();
+    return () => {
+      closed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      try { wsRef.current && wsRef.current.close(); } catch (e) {}
+    };
+  }, []);
 
   // chart levels from agents
   const levels = [];
@@ -83,6 +132,8 @@ function App() {
     pull("breakout").forEach((l) => levels.push(l));
     pull("trend").forEach((l) => levels.push(l));
   }
+  const fvgZones = analysis?.agents?.find((a) => a.agent === "fair_value_gap")?.key_levels || [];
+  const confluenceZones = analysis?.brain?.confluence_zones || [];
 
   return (
     <div className="min-h-screen scanlines" style={{ background: "#080b10" }}>
@@ -92,6 +143,8 @@ function App() {
         timeframe={timeframe}
         onTimeframe={setTimeframe}
         syncStatus={syncStatus}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenBacktest={() => setBacktestOpen(true)}
       />
 
       <main className="pt-16 px-3 pb-6 max-w-[1800px] mx-auto">
@@ -115,7 +168,7 @@ function App() {
 
             <div className="panel h-[420px]">
               {candles.length > 0 ? (
-                <CandleChart candles={candles} levels={levels} timeframe={timeframe} />
+                <CandleChart candles={candles} levels={levels} fvgZones={fvgZones} confluenceZones={confluenceZones} livePrice={livePrice} timeframe={timeframe} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center widget-label">
                   Loading local candles…
@@ -152,6 +205,17 @@ function App() {
           {(analysis?.brain?.assumptions || []).join("  ·  ")}
         </div>
       </main>
+
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onChanged={() => loadAnalysis(tfRef.current)}
+      />
+      <BacktestModal
+        open={backtestOpen}
+        onClose={() => setBacktestOpen(false)}
+        timeframe={timeframe}
+      />
     </div>
   );
 }

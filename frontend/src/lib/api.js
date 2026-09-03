@@ -14,6 +14,11 @@ export const getSyncStatus = async () => (await client.get("/market/sync-status"
 export const getAnalysis = async (tf) =>
   (await client.get("/analysis", { params: { timeframe: tf } })).data;
 export const getConfig = async () => (await client.get("/config")).data;
+export const getSettings = async () => (await client.get("/settings")).data;
+export const updateSettings = async (payload) => (await client.put("/settings", payload)).data;
+export const resetSettings = async () => (await client.post("/settings/reset")).data;
+export const runBacktest = async ({ timeframe, lookback = 150, forward = 8, step = 3 }) =>
+  (await client.get("/backtest", { params: { timeframe, lookback, forward, step } })).data;
 
 export const AGENT_META = {
   market_structure: { name: "Market Structure", focus: "HH / HL / LH / LL · BOS · CHoCH", num: "01" },

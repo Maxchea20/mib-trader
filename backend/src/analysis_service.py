@@ -2,7 +2,8 @@
 from typing import List, Dict
 import numpy as np
 
-from .config import SYMBOL, HTF_TIMEFRAMES, ANALYSIS_LOOKBACK, AGENT_WEIGHTS
+from .config import SYMBOL, HTF_TIMEFRAMES, ANALYSIS_LOOKBACK
+from . import settings
 from .contract import AgentResult
 from .market_data import data_access as dao
 from .brain import brain as brain_engine
@@ -83,7 +84,7 @@ def full_analysis(timeframe: str) -> Dict:
         "price": price,
         "candle_count": len(candles),
         "agents": [a.to_dict() for a in agents],
-        "agent_weights": AGENT_WEIGHTS,
+        "agent_weights": settings.weights(),
         "htf_regime": htf,
         "brain": brain,
     })

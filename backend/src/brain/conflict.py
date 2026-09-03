@@ -5,11 +5,13 @@ voting. Strong two-sided disagreement reduces directional confidence and may
 force WAIT or AVOID.
 """
 from typing import List, Dict
-from ..config import CONFLICT, AGENT_WEIGHTS
+from .. import settings
 from ..contract import LONG, SHORT
 
 
 def detect_conflict(agents: List, bias: str) -> Dict:
+    CONFLICT = settings.conflict()
+    AGENT_WEIGHTS = settings.weights()
     long_w = 0.0
     short_w = 0.0
     strong_long = []

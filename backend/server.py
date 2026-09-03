@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Query
+from fastapi import FastAPI, APIRouter, Query, WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -14,6 +14,10 @@ from src.config import (SYMBOL, TIMEFRAMES, AGENT_WEIGHTS, HTF_GATE, CONFLUENCE,
 from src.market_data import data_access as dao
 from src.market_data import gap_sync, manager
 from src import analysis_service
+from src import settings as runtime_settings
+from src import backtest as backtest_engine
+from pydantic import BaseModel
+from typing import Optional, Dict
 
 app = FastAPI(title="MIB-Trader API")
 api_router = APIRouter(prefix="/api")
@@ -98,7 +102,60 @@ async def agent_detail(agent_id: str, timeframe: str = Query("15m")):
     return analysis_service.single_agent(agent_id, timeframe)
 
 
+# --- Live config tuning --------------------------------------------------
+class SettingsUpdate(BaseModel):
+    agent_weights: Optional[Dict[str, float]] = None
+    htf_gate: Optional[Dict[str, float]] = None
+    confluence: Optional[Dict[str, float]] = None
+    conflict: Optional[Dict[str, float]] = None
+    entry: Optional[Dict[str, float]] = None
+
+
+@api_router.get("/settings")
+async def get_settings():
+    return runtime_settings.snapshot()
+
+
+@api_router.put("/settings")
+async def put_settings(payload: SettingsUpdate):
+    return runtime_settings.update(payload.model_dump(exclude_none=True))
+
+
+@api_router.post("/settings/reset")
+async def reset_settings():
+    return runtime_settings.reset()
+
+
+# --- Backtesting ---------------------------------------------------------
+@api_router.get("/backtest")
+async def backtest(timeframe: str = Query("15m"), lookback: int = Query(150),
+                   forward: int = Query(8), step: int = Query(3)):
+    if timeframe not in TIMEFRAMES:
+        return {"error": "invalid_timeframe", "timeframes": TIMEFRAMES}
+    import asyncio
+    return await asyncio.to_thread(backtest_engine.run_backtest, timeframe,
+                                   lookback, forward, step)
+
+
 app.include_router(api_router)
+
+
+@app.websocket("/api/ws/live")
+async def ws_live(ws: WebSocket):
+    await ws.accept()
+    await manager.register(ws)
+    try:
+        # send an immediate snapshot so the client shows a price instantly
+        await ws.send_text(manager._snapshot_msg())
+        while True:
+            # keep the connection open; ignore any inbound messages
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        manager.unregister(ws)
 
 app.add_middleware(
     CORSMiddleware,

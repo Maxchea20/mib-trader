@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createChart } from "lightweight-charts";
 
 const DIR = {
@@ -9,12 +9,15 @@ const DIR = {
   dynamic: "#eab308",
 };
 
-export const CandleChart = ({ candles, levels = [], fvgZones = [], timeframe }) => {
+export const CandleChart = ({ candles, levels = [], fvgZones = [], confluenceZones = [], livePrice = null, timeframe }) => {
   const containerRef = useRef(null);
+  const overlayRef = useRef(null);
   const chartRef = useRef(null);
   const candleSeriesRef = useRef(null);
   const volSeriesRef = useRef(null);
   const priceLinesRef = useRef([]);
+  const lastCandleRef = useRef(null);
+  const [bands, setBands] = useState([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -75,7 +78,24 @@ export const CandleChart = ({ candles, levels = [], fvgZones = [], timeframe }) 
     }));
     candleSeriesRef.current.setData(cData);
     volSeriesRef.current.setData(vData);
+    lastCandleRef.current = cData.length ? { ...cData[cData.length - 1] } : null;
   }, [candles]);
+
+  // live forming-candle update from the WS price feed
+  useEffect(() => {
+    const series = candleSeriesRef.current;
+    const last = lastCandleRef.current;
+    if (!series || !last || livePrice == null) return;
+    const updated = {
+      time: last.time,
+      open: last.open,
+      high: Math.max(last.high, livePrice),
+      low: Math.min(last.low, livePrice),
+      close: livePrice,
+    };
+    lastCandleRef.current = updated;
+    try { series.update(updated); } catch (e) {}
+  }, [livePrice]);
 
   // draw level price lines
   useEffect(() => {
@@ -97,9 +117,71 @@ export const CandleChart = ({ candles, levels = [], fvgZones = [], timeframe }) 
     });
   }, [levels]);
 
+  // FVG + confluence shaded bands via priceToCoordinate
+  useEffect(() => {
+    const compute = () => {
+      const series = candleSeriesRef.current;
+      const cont = containerRef.current;
+      if (!series || !cont) return;
+      const h = cont.clientHeight;
+      const out = [];
+      const push = (lo, hi, color, borderColor, label, key) => {
+        if (lo == null || hi == null) return;
+        let yTop = series.priceToCoordinate(Math.max(lo, hi));
+        let yBot = series.priceToCoordinate(Math.min(lo, hi));
+        if (yTop == null || yBot == null) return;
+        yTop = Math.max(0, yTop);
+        yBot = Math.min(h, yBot);
+        const height = Math.max(2, yBot - yTop);
+        if (yTop > h || yBot < 0) return;
+        out.push({ key, top: yTop, height, color, borderColor, label });
+      };
+      (fvgZones || []).forEach((z, i) => {
+        const bull = z.type === "fvg_bullish";
+        push(z.low, z.high,
+          bull ? "rgba(16,185,129,0.16)" : "rgba(244,63,94,0.16)",
+          bull ? "rgba(16,185,129,0.5)" : "rgba(244,63,94,0.5)",
+          `FVG ${bull ? "▲" : "▼"}${z.mitigated ? " ~" : ""}`, `fvg-${i}`);
+      });
+      (confluenceZones || []).forEach((z, i) => {
+        push(z.low, z.high, "rgba(56,189,248,0.14)", "rgba(56,189,248,0.55)",
+          `Confluence ×${z.count}`, `cf-${i}`);
+      });
+      setBands(out);
+    };
+    compute();
+    const chart = chartRef.current;
+    let unsub = () => {};
+    if (chart) {
+      const handler = () => compute();
+      chart.timeScale().subscribeVisibleLogicalRangeChange(handler);
+      unsub = () => chart.timeScale().unsubscribeVisibleLogicalRangeChange(handler);
+    }
+    const iv = setInterval(compute, 400);
+    return () => { clearInterval(iv); unsub(); };
+  }, [fvgZones, confluenceZones, candles]);
+
   return (
     <div className="relative w-full h-full" data-testid="trading-chart-container">
       <div ref={containerRef} className="w-full h-full" />
+      <div ref={overlayRef} className="absolute inset-0 pointer-events-none" data-testid="chart-overlays">
+        {bands.map((b) => (
+          <div
+            key={b.key}
+            className="absolute left-0"
+            style={{
+              top: `${b.top}px`, height: `${b.height}px`, right: "58px",
+              background: b.color, borderTop: `1px solid ${b.borderColor}`,
+              borderBottom: `1px solid ${b.borderColor}`,
+            }}
+          >
+            <span className="absolute left-1 top-0 font-mono-t text-[8px] leading-none px-1 py-0.5"
+              style={{ color: b.borderColor }}>
+              {b.label}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

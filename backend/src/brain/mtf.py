@@ -5,12 +5,14 @@ same numerical score as LTF signals. Instead it acts as a gate: an opposing HTF
 regime raises the confirmation requirements for a counter-trend LTF trade.
 """
 from typing import List, Dict
-from ..config import HTF_GATE, AGENT_WEIGHTS
+from .. import settings
 from ..contract import LONG, SHORT, NEUTRAL
 
 
 def regime_from_agents(agents_by_tf: Dict[str, List]) -> Dict:
     """Compute HTF regime from agent outputs on 4h and 1d."""
+    HTF_GATE = settings.htf_gate()
+    AGENT_WEIGHTS = settings.weights()
     tf_scores = {}
     for tf, agents in agents_by_tf.items():
         num = 0.0
@@ -46,6 +48,7 @@ def regime_from_agents(agents_by_tf: Dict[str, List]) -> Dict:
 
 def apply_gate(ltf_bias: str, regime: str) -> Dict:
     """Return the extra requirements imposed by the HTF gate on an LTF trade."""
+    HTF_GATE = settings.htf_gate()
     extra_score = 0.0
     extra_conf = 0.0
     relation = "neutral"

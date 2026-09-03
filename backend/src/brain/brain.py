@@ -5,7 +5,8 @@ produces exactly one state: LONG / SHORT / WAIT / AVOID, with a traceable
 reasoning chain. It uses weighted evidence — NOT vote counting.
 """
 from typing import List, Dict
-from ..config import AGENT_WEIGHTS, ENTRY, CONFIG_VERSION, ASSUMPTIONS
+from ..config import CONFIG_VERSION, ASSUMPTIONS
+from .. import settings
 from ..contract import (LONG, SHORT, NEUTRAL, STATE_LONG, STATE_SHORT,
                         STATE_WAIT, STATE_AVOID, clamp)
 from .confluence import find_confluence_zones
@@ -19,6 +20,7 @@ def _base_consensus(agents: List) -> Dict:
     den = 0.0
     contributions = []
     active = 0
+    AGENT_WEIGHTS = settings.weights()
     for res in agents:
         if not res.valid:
             continue
@@ -38,6 +40,8 @@ def _base_consensus(agents: List) -> Dict:
 
 
 def decide(agents: List, price: float, timeframe: str, htf: Dict) -> Dict:
+    AGENT_WEIGHTS = settings.weights()
+    ENTRY = settings.entry()
     base = _base_consensus(agents)
     consensus = base["base_consensus"]
 
@@ -108,6 +112,7 @@ def decide(agents: List, price: float, timeframe: str, htf: Dict) -> Dict:
 
 def _resolve_state(bias, consensus, confidence, active, conflict, gate,
                    score_req, conf_req, regime):
+    ENTRY = settings.entry()
     why = []
     # AVOID conditions (explicit vetoes / poor conditions)
     if active < ENTRY["min_valid_agents"]:
