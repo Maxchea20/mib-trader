@@ -44,7 +44,7 @@ class TestMarket:
         assert r.status_code == 200
         d = r.json()
         assert d.get("connected") is True
-        assert d.get("source") in ("mexc", "fallback")
+        assert d.get("source") in ("mexc", "mexc_ws", "mexc_rest")
         assert isinstance(d.get("last_price"), (int, float))
         assert isinstance(d.get("ticker"), dict)
 
