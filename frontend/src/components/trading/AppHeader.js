@@ -9,7 +9,6 @@ export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, on
   const changeRate = (t.change_rate || 0) * 100;
   const up = changeRate >= 0;
   const connected = live?.connected;
-  const fallback = live?.using_fallback;
 
   const totalCandles = syncStatus
     ? Object.values(syncStatus.timeframes || {}).reduce((a, v) => a + (v.count || 0), 0)
@@ -62,7 +61,7 @@ export const AppHeader = ({ ticker, live, timeframe, onTimeframe, syncStatus, on
           {connected ? <Wifi className="w-3.5 h-3.5 text-emerald-400" /> : <WifiOff className="w-3.5 h-3.5 text-rose-400" />}
           <span className={`pulse-dot w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400" : "bg-rose-500"}`} />
           <span className="font-mono-t text-[11px] text-slate-300">
-            {fallback ? "SIM" : connected ? (live?.ws_connected ? "MEXC · WS" : "MEXC LIVE") : "OFFLINE"}
+            {connected ? (live?.ws_connected ? "MEXC · WS" : "MEXC LIVE") : "OFFLINE"}
           </span>
         </div>
 
