@@ -1,15 +1,17 @@
-"""Live-first market-data manager: startup sync + background poller + fallback.
+"""Live-first market-data manager: startup sync + background poller.
 
 Startup behavior is LIVE-FIRST:
  1. Serve live price/current candle immediately (ticker).
  2. Load existing local SQLite candles immediately (chart renders from local).
  3. Run MEXC REST sync in the background.
  4. Detect + fill historical gaps, save back to SQLite.
+
+NO SYNTHETIC / FALLBACK DATA. If MEXC (WS and REST) is unreachable, the app
+reports itself as disconnected rather than fabricating prices. Trading logic
+must treat "not connected" as "do nothing", never as "pretend and continue".
 """
 import asyncio
 import time
-import math
-import random
 import json
 import contextlib
 import websockets
@@ -25,41 +27,15 @@ MEXC_WS_URL = "wss://contract.mexc.com/edge"
 STATE = {
     "connected": False,
     "ws_connected": False,
-    "source": "unknown",       # mexc_ws | mexc_rest | fallback
+    "source": "unknown",       # mexc_ws | mexc_rest | disconnected
     "last_ticker": None,
     "last_price": None,
     "last_tick_ts": None,
     "startup_synced": False,
-    "using_fallback": False,
 }
 
 _clients: Set = set()
 _dirty = False
-_price_walk = None
-
-
-def _seed_synthetic(symbol: str, timeframe: str, base_price: float, count: int = 600):
-    """Seed deterministic-ish synthetic candles so the app runs if MEXC blocked."""
-    step = TF_SECONDS[timeframe]
-    now = int(time.time())
-    start = now - step * count
-    price = base_price
-    candles = []
-    rnd = random.Random(hash((symbol, timeframe)) & 0xFFFFFFFF)
-    for i in range(count):
-        ts = start + i * step
-        drift = math.sin(i / 30.0) * base_price * 0.0008
-        noise = (rnd.random() - 0.5) * base_price * 0.002
-        o = price
-        c = max(1.0, price + drift + noise)
-        h = max(o, c) * (1 + rnd.random() * 0.0008)
-        l = min(o, c) * (1 - rnd.random() * 0.0008)
-        v = 1000 + rnd.random() * 4000
-        candles.append({"ts": ts, "open": round(o, 1), "high": round(h, 1),
-                        "low": round(l, 1), "close": round(c, 1), "volume": round(v, 1)})
-        price = c
-    db.upsert_candles(symbol, timeframe, candles)
-    db.set_sync_meta(symbol, timeframe, now, "fallback")
 
 
 async def initial_load():
@@ -76,24 +52,37 @@ async def initial_load():
 
 
 async def _autotrade_loop():
-    """Hands-free: evaluate the Brain on each new candle and manage AUTO trades."""
+    """Hands-free: evaluate the Brain on each new candle and manage AUTO trades.
+
+    Only acts while genuinely connected to MEXC (WS or REST). If the feed is
+    down, this loop does nothing rather than trading on stale/fabricated data.
+    """
     from .. import autotrader
     await asyncio.sleep(9)  # let startup sync populate candles
     while True:
         try:
-            autotrader.evaluate(STATE.get("last_price"))
+            if STATE.get("connected"):
+                autotrader.evaluate(STATE.get("last_price"))
+            else:
+                autotrader.STATE["last_action"] = "PAUSED (disconnected)"
+                autotrader.STATE["last_reason"] = "No live MEXC feed"
         except Exception:
             pass
         await asyncio.sleep(5)
 
 
 async def _paper_monitor_loop():
-    """Auto-close paper trades when the live price hits SL/TP (persists history)."""
+    """Auto-close paper trades when the live price hits SL/TP (persists history).
+
+    Skipped entirely while disconnected — never marks a trade SL/TP-hit
+    against a price that isn't actually live from MEXC.
+    """
     from .. import paper_trading
     while True:
         await asyncio.sleep(1)
         try:
-            paper_trading.check_open_trades(STATE.get("last_price"))
+            if STATE.get("connected"):
+                paper_trading.check_open_trades(STATE.get("last_price"))
         except Exception:
             pass
 
@@ -157,7 +146,6 @@ async def _mexc_ws_loop():
                 ka = asyncio.create_task(_keepalive())
                 STATE["ws_connected"] = True
                 STATE["connected"] = True
-                STATE["using_fallback"] = False
                 STATE["source"] = "mexc_ws"
                 try:
                     while True:
@@ -227,14 +215,11 @@ async def _startup_sync():
             await asyncio.sleep(0.15)
         STATE["startup_synced"] = True
     else:
-        # fallback so the app still runs
-        STATE["source"] = "fallback"
-        STATE["using_fallback"] = True
-        base = 60000.0
-        for tf in TIMEFRAMES:
-            if db.count_candles(SYMBOL, tf) < 60:
-                _seed_synthetic(SYMBOL, tf, base)
-        STATE["startup_synced"] = True
+        # Honest disconnect. No synthetic candles, no fabricated price.
+        # Whatever real candles already exist locally (from a previous
+        # session) still render; nothing new is invented.
+        STATE["source"] = "disconnected"
+        STATE["startup_synced"] = False
 
 
 async def _poll_loop():
@@ -259,37 +244,17 @@ async def _poll_loop():
                 if t:
                     STATE["connected"] = True
                     STATE["source"] = "mexc_rest"
-                    STATE["using_fallback"] = False
                     STATE["last_ticker"] = t
                     STATE["last_price"] = t["last"]
                     STATE["last_tick_ts"] = int(time.time())
                 else:
                     STATE["connected"] = False
-                    _fallback_tick()
+                    STATE["source"] = "disconnected"
         except Exception:
             if not STATE["ws_connected"]:
                 STATE["connected"] = False
-                _fallback_tick()
+                STATE["source"] = "disconnected"
         await asyncio.sleep(5)
-
-
-def _fallback_tick():
-    """Advance a synthetic price when MEXC is unreachable."""
-    global _price_walk, _dirty
-    if _price_walk is None:
-        _price_walk = STATE.get("last_price") or 60000.0
-    _price_walk *= (1 + (random.random() - 0.5) * 0.0006)
-    STATE["source"] = "fallback"
-    STATE["using_fallback"] = True
-    STATE["last_price"] = round(_price_walk, 1)
-    STATE["last_tick_ts"] = int(time.time())
-    STATE["last_ticker"] = {
-        "symbol": SYMBOL, "last": STATE["last_price"], "bid": STATE["last_price"],
-        "ask": STATE["last_price"], "high24": 0, "low24": 0, "volume24": 0,
-        "amount24": 0, "change_rate": 0, "change_value": 0, "funding_rate": 0,
-        "index_price": STATE["last_price"], "ts": int(time.time() * 1000),
-    }
-    _dirty = True
 
 
 def live_status() -> Dict:
@@ -300,7 +265,6 @@ def live_status() -> Dict:
         "connected": STATE["connected"],
         "ws_connected": STATE["ws_connected"],
         "source": STATE["source"],
-        "using_fallback": STATE["using_fallback"],
         "startup_synced": STATE["startup_synced"],
         "last_price": STATE["last_price"],
         "tick_age_seconds": age,
